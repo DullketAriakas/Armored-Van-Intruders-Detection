@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Practica_final"
+version = "0.1"
+dependencies = ["flask", "numpy"]
+
+[tool.setuptools]
+packages = ["Practica_final"]
+package-dir = {"" = "src"}
