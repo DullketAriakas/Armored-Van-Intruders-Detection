@@ -22,7 +22,7 @@ server_dh_public_key      = server_dh_private_key.public_key().public_bytes(seri
 
 print("Claves DH creadas")
 #Estructura de la tabla
-sensores_esquema=[{'name': 'id', 'type': 'INTEGER', 'restrictions': 'PRIMARY KEY'},{'name': 'temperature', 'type': 'TEXT', 'restrictions': 'NOT NULL'},{'name': 'user_id', 'type': 'TEXT'}]
+sensores_esquema=[{'name': 'id', 'type': 'INTEGER', 'restrictions': 'PRIMARY KEY'},{'name': 'DATA', 'type': 'TEXT', 'restrictions': 'NOT NULL'},{'name': 'timestamp', 'type': 'TEXT', 'restrictions': 'NOT NULL'}]
 
 
 
