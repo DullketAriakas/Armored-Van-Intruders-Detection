@@ -2,37 +2,12 @@ import time
 import json
 import requests
 import base64
+import functions
 from Crypto.Cipher import AES
 
 # 1. Configuracion servidor
 SECRET_KEY = b'ClaveSecreta1234' # Clave de 16 bytes
 URL_SERVIDOR = "http://localhost:5001/sensor_values"
-
-# 2. Funciones criptografía
-def pad(data):
-    padding_len = 16 - (len(data) % 16)
-    return data + (chr(padding_len) * padding_len)
-
-def unpad(data):
-    return data[:-ord(data[-1:])]
-
-def cifrar_mensaje(diccionario):
-    texto_plano = json.dumps(diccionario)
-    texto_padded = pad(texto_plano)
-    cipher = AES.new(SECRET_KEY, AES.MODE_ECB)
-    encrypted_bytes = cipher.encrypt(texto_padded.encode('utf-8'))
-    return base64.b64encode(encrypted_bytes).decode('utf-8').strip()
-
-def descifrar_mensaje(base64_string):
-    try:
-        encrypted_bytes = base64.b64decode(base64_string)
-        decipher = AES.new(SECRET_KEY, AES.MODE_ECB)
-        decrypted_padded = decipher.decrypt(encrypted_bytes).decode('utf-8')
-        texto_plano = unpad(decrypted_padded)
-        return json.loads(texto_plano)
-    except Exception as e:
-        print(">>> Fallo de seguridad al descifrar:", e)
-        return None
 
 # 3. Inicio simulación
 print("------ Iniciando simulador de furgón blindado... --------- ")
@@ -73,7 +48,7 @@ for evento in datos_timeline:
     }
     
     # Cifrar el paquete
-    payload_cifrado = cifrar_mensaje(doc_interno)
+    payload_cifrado = functions.cifrar_mensaje(doc_interno,SECRET_KEY)
     paquete_http = {"datos_seguros": payload_cifrado}
     
     print(f"Enviando JSON cifrado: {payload_cifrado[:40]}...")
@@ -88,7 +63,7 @@ for evento in datos_timeline:
         orden_cifrada = docget.get("orden_cifrada", "")
         
         if orden_cifrada:
-            orden_legible = descifrar_mensaje(orden_cifrada)
+            orden_legible = functions.descifrar_mensaje(orden_cifrada,SECRET_KEY)
             if orden_legible:
                 Actuacion = orden_legible.get("Actuacion", "C")
                 
