@@ -1,0 +1,56 @@
+[
+  {
+    "timestamp": "16:50:00",
+    "fase": "1. Patrulla Normal",
+    "latitud": 40.6852, "longitud": -3.7045,
+    "temperatura_c": 22.5, "presion_hpa": 1013.2, "estado_alarma": 0
+  },
+  {
+    "timestamp": "16:50:05",
+    "fase": "1. Patrulla Normal",
+    "latitud": 40.6855, "longitud": -3.7042,
+    "temperatura_c": 22.5, "presion_hpa": 1013.1, "estado_alarma": 0
+  },
+  {
+    "timestamp": "16:50:10",
+    "fase": "1. Patrulla Normal",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 22.6, "presion_hpa": 1013.2, "estado_alarma": 0
+  },
+  {
+    "timestamp": "16:50:15",
+    "fase": "2. Emboscada (Furgón detenido)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 22.6, "presion_hpa": 1013.2, "estado_alarma": 0
+  },
+  {
+    "timestamp": "16:50:20",
+    "fase": "3. IMPACTO EXPLOSIVO (Caída de Presión)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 22.6, "presion_hpa": 920.5, "estado_alarma": 2
+  },
+  {
+    "timestamp": "16:50:25",
+    "fase": "4. Estabilización de Presión (Agujero creado)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 23.1, "presion_hpa": 1013.2, "estado_alarma": 2
+  },
+  {
+    "timestamp": "16:50:30",
+    "fase": "5. ATAQUE TÉRMICO (Soplete/Lanza Térmica)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 38.4, "presion_hpa": 1013.2, "estado_alarma": 1
+  },
+  {
+    "timestamp": "16:50:35",
+    "fase": "5. ATAQUE TÉRMICO (Soplete/Lanza Térmica)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 55.7, "presion_hpa": 1013.2, "estado_alarma": 1
+  },
+  {
+    "timestamp": "16:50:40",
+    "fase": "6. SISTEMA BLOQUEADO (Servidor deniega apertura)",
+    "latitud": 40.6858, "longitud": -3.7039,
+    "temperatura_c": 62.1, "presion_hpa": 1013.2, "estado_alarma": 1
+  }
+]

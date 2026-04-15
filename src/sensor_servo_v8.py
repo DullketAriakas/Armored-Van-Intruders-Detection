@@ -1,9 +1,7 @@
-import time
+import time, os
 import json
 import requests
-import base64
 import functions
-from Crypto.Cipher import AES
 
 # 1. Configuracion servidor
 SECRET_KEY = b'ClaveSecreta1234' # Clave de 16 bytes
@@ -13,7 +11,8 @@ URL_SERVIDOR = "http://localhost:5001/sensor_values"
 print("------ Iniciando simulador de furgón blindado... --------- ")
 
 try:
-    with open('timeline_datos.json', 'r', encoding='utf-8') as f:    
+    
+    with open('src/timeline_datos.json', 'r', encoding='utf-8') as f:    
         datos_timeline = json.load(f)
     print(f"Se han cargado {len(datos_timeline)} eventos del archivo JSON")
 except Exception as e:
