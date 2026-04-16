@@ -4,8 +4,14 @@ import requests
 import functions
 
 # 1. Configuracion servidor
-SECRET_KEY = b'ClaveSecreta1234' # Clave de 16 bytes
+SECRET_KEY = b'ClaveSecreta1234' # Clave de 16 bytes --> Provisional, va a venir del deffie helman para que haya autenticacion
 URL_SERVIDOR = "http://localhost:5001/sensor_values"
+
+# Clave RSA pública del servidor (Firma)
+_,server_rsa_public_key=functions.createKeys("client")
+
+
+
 
 # 3. Inicio simulación
 print("------ Iniciando simulador de furgón blindado... --------- ")

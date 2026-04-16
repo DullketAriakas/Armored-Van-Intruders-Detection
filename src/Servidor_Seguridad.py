@@ -1,15 +1,17 @@
 import functions
+from pathlib import Path
 from flask import Flask, request
+import base64
 from cryptography.hazmat.primitives.asymmetric import dh, rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+BASE_DIR = Path(__file__).resolve().parent
 
 #Claves RSA del servidor (Firma)
 
-server_rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+server_rsa_private_key,server_rsa_public_key=functions.createKeys("server",BASE_DIR)
 
-server_rsa_public_key = server_rsa_private_key.public_key()
 
 print("Claves RSA creadas")
 # Generación de parámetros Diffie - Hellman (Autenticación)
@@ -21,6 +23,18 @@ server_dh_public_key      = server_dh_private_key.public_key().public_bytes(seri
 
 
 print("Claves DH creadas")
+
+#Firmar la clave
+
+signature = server_rsa_private_key.sign(
+    server_dh_public_key,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
+
 #Estructura de la tabla
 sensores_esquema=[{'name': 'id', 'type': 'INTEGER', 'restrictions': 'PRIMARY KEY'},{'name': 'DATA', 'type': 'TEXT', 'restrictions': 'NOT NULL'},{'name': 'timestamp', 'type': 'TEXT', 'restrictions': 'NOT NULL'}]
 
@@ -49,8 +63,20 @@ def read_sensors():
 
 @app.route('/hadshake', methods = ['GET'])
 def publicKey():
-    return 1
-
+	if request.method == 'GET':
+		payload = {
+			"type": "server_hello",
+			"dh_public": base64.b64encode(server_dh_public_key).decode(),
+			"signature": base64.b64encode(signature).decode(),
+			"p": parameters.parameter_numbers().p,
+			"g": parameters.parameter_numbers().g
+		}
+		return payload
+@app.route('/hadshake_verification', methods = ['GET'])
+def publicKey():
+	if request.method == 'GET':
+		
+		return "ack"
 
 
 tabla_datos=functions.DataBase("SystemDB","SensoresFurgon")
