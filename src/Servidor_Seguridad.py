@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 BASE_DIR = Path(__file__).resolve().parent
+SHARED_KEY_SERVER=None
 
 #Claves RSA del servidor (Firma)
 
@@ -61,7 +62,7 @@ def read_sensors():
 
 		return respuestaJson, 200
 
-@app.route('/hadshake', methods = ['GET'])
+@app.route('/handshake', methods = ['GET'])
 def publicKey():
 	if request.method == 'GET':
 		payload = {
@@ -71,12 +72,14 @@ def publicKey():
 			"p": parameters.parameter_numbers().p,
 			"g": parameters.parameter_numbers().g
 		}
-		return payload
-@app.route('/hadshake_verification', methods = ['GET'])
-def publicKey():
+		return payload, 200
+@app.route('/handshake_verification', methods = ['GET'])
+def DH_final_key():
+	global SHARED_KEY_SERVER
+	
 	if request.method == 'GET':
 		content = request.get_json()
-		client_pub = serialization.load_pem_public_key(
+		client_pub = serialization.load_der_public_key(
 			base64.b64decode(content["client_dh"])
 		)
 
@@ -91,7 +94,7 @@ def publicKey():
 
 		print("SERVER KEY:", SHARED_KEY_SERVER.hex())
 
-		return "ack"
+		return "ACK", 200
 
 
 tabla_datos=functions.DataBase("SystemDB","SensoresFurgon")

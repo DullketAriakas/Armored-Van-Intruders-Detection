@@ -3,22 +3,25 @@ import json
 import requests
 import functions
 import base64
+from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 # 1. Configuracion servidor
-SECRET_KEY = b'ClaveSecreta1234' # Clave de 16 bytes --> Provisional, va a venir del deffie helman para que haya autenticacion
 URL_SERVIDOR = "http://localhost:5001/sensor_values"
 URL_BASE_SERVIDOR= "http://localhost:5001"
+BASE_DIR = Path(__file__).resolve().parent
 
 # Clave RSA pública del servidor (Firma)
-_,server_rsa_public_key=functions.createKeys("client")
+_,server_rsa_public_key=functions.createKeys("client",BASE_DIR)
 
 # Handshake
 response_handshake = requests.get(URL_BASE_SERVIDOR+"/handshake")
-server_dh = base64.b64decode(response_handshake["dh_public"])
-signature = base64.b64decode(response_handshake["signature"])
+response_json=response_handshake.json()
+print(response_json)
+server_dh = base64.b64decode(response_json["dh_public"])
+signature = base64.b64decode(response_json["signature"])
 
 try:
     server_rsa_public_key.verify(
@@ -36,28 +39,28 @@ except Exception as e:
     sys.exit()
 
 # Cargar parámetros DH
-p = response_handshake["p"]
-g = response_handshake["g"]
+p = response_json["p"]
+g = response_json["g"]
 
 params = dh.DHParameterNumbers(p, g).parameters()
 
-server_pub = serialization.load_pem_public_key(server_dh)
+server_pub = serialization.load_der_public_key(server_dh)
 
 # Generar claves DH del cliente
 client_private_key = params.generate_private_key()
 client_public_key = client_private_key.public_key()
 
 # Enviar clave del cliente
-paquete_http=json.dumps({
+paquete_http= {
     "client_dh": base64.b64encode(
         client_public_key.public_bytes(
-            serialization.Encoding.PEM,
+            serialization.Encoding.DER,
             serialization.PublicFormat.SubjectPublicKeyInfo
         )
     ).decode()
-}).encode()
-headers = {'Content-Type': 'application/json'}
-requests.get(URL_BASE_SERVIDOR+"/hadshake_verification", json=paquete_http, headers=headers)
+}
+
+requests.get(URL_BASE_SERVIDOR+"/handshake_verification", json=paquete_http)
 
 shared_key = client_private_key.exchange(server_pub)
 
@@ -110,7 +113,7 @@ for evento in datos_timeline:
     }
     
     # Cifrar el paquete
-    payload_cifrado = functions.cifrar_mensaje(doc_interno,SECRET_KEY)
+    payload_cifrado = functions.cifrar_mensaje(doc_interno,SHARED_KEY_CLIENT)
     paquete_http = {"datos_seguros": payload_cifrado}
     
     print(f"Enviando JSON cifrado: {payload_cifrado[:40]}...")
@@ -125,7 +128,7 @@ for evento in datos_timeline:
         orden_cifrada = docget.get("orden_cifrada", "")
         
         if orden_cifrada:
-            orden_legible = functions.descifrar_mensaje(orden_cifrada,SECRET_KEY)
+            orden_legible = functions.descifrar_mensaje(orden_cifrada,SHARED_KEY_CLIENT)
             if orden_legible:
                 Actuacion = orden_legible.get("Actuacion", "C")
                 
