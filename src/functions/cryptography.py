@@ -49,7 +49,7 @@ def createKeys(rol, root):
             )
             public_key = private_key.public_key()
 
-            # guardar privada
+
             with open(private_path, "wb") as f:
                 f.write(
                     private_key.private_bytes(
@@ -59,7 +59,6 @@ def createKeys(rol, root):
                     )
                 )
 
-            # guardar pública (para compartir con cliente)
             with open(public_path, "wb") as f:
                 f.write(
                     public_key.public_bytes(
@@ -70,7 +69,6 @@ def createKeys(rol, root):
 
             return private_key, public_key
 
-        # cargar existentes
         with open(private_path, "rb") as f:
             private_key = serialization.load_pem_private_key(f.read(), password=None)
 
@@ -79,9 +77,7 @@ def createKeys(rol, root):
 
         return private_key, public_key
 
-    # -----------------------------
-    # CLIENTE
-    # -----------------------------
+
     elif rol == "client":
 
         public_path = key_dir / "server_public.pem"
