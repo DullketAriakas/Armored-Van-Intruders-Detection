@@ -1,4 +1,4 @@
-import functions
+import functions, json
 from pathlib import Path
 from flask import Flask, request
 import base64
@@ -75,7 +75,22 @@ def publicKey():
 @app.route('/hadshake_verification', methods = ['GET'])
 def publicKey():
 	if request.method == 'GET':
-		
+		content = request.get_json()
+		client_pub = serialization.load_pem_public_key(
+			base64.b64decode(content["client_dh"])
+		)
+
+		shared_key = server_dh_private_key.exchange(client_pub)
+
+		SHARED_KEY_SERVER = HKDF(
+			algorithm=hashes.SHA256(),
+			length=32,
+			salt=None,
+			info=b"handshake"
+		).derive(shared_key)
+
+		print("SERVER KEY:", SHARED_KEY_SERVER.hex())
+
 		return "ack"
 
 
