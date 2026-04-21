@@ -17,7 +17,7 @@ server_rsa_private_key,server_rsa_public_key=functions.createKeys("server",BASE_
 print("Claves RSA creadas")
 # Generación de parámetros Diffie - Hellman (Autenticación)
 
-parameters = dh.generate_parameters(generator=2, key_size=2048)
+parameters = dh.generate_parameters(generator=2, key_size=1024)
 
 server_dh_private_key     = parameters.generate_private_key()
 server_dh_public_key      = server_dh_private_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
@@ -62,8 +62,9 @@ def read_sensors():
 
 		return respuestaJson, 200
 
-@app.route('/handshake', methods = ['GET'])
+@app.route('/handshake', methods = ['GET','POST'])
 def publicKey():
+	global SHARED_KEY_SERVER
 	if request.method == 'GET':
 		payload = {
 			"type": "server_hello",
@@ -73,11 +74,8 @@ def publicKey():
 			"g": parameters.parameter_numbers().g
 		}
 		return payload, 200
-@app.route('/handshake_verification', methods = ['GET'])
-def DH_final_key():
-	global SHARED_KEY_SERVER
 	
-	if request.method == 'GET':
+	if request.method == 'POST':
 		content = request.get_json()
 		client_pub = serialization.load_der_public_key(
 			base64.b64decode(content["client_dh"])
@@ -95,6 +93,7 @@ def DH_final_key():
 		print("SERVER KEY:", SHARED_KEY_SERVER.hex())
 
 		return "ACK", 200
+
 
 
 tabla_datos=functions.DataBase("SystemDB","SensoresFurgon")

@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 # 1. Configuracion servidor
 URL_SERVIDOR = "http://localhost:5001/sensor_values"
-URL_BASE_SERVIDOR= "http://localhost:5001"
+URL_BASE_SERVIDOR= "http://127.0.0.1:5001"
 BASE_DIR = Path(__file__).resolve().parent
 
 # Clave RSA pública del servidor (Firma)
@@ -60,7 +60,7 @@ paquete_http= {
     ).decode()
 }
 
-requests.get(URL_BASE_SERVIDOR+"/handshake_verification", json=paquete_http)
+ack=requests.post(URL_BASE_SERVIDOR+"/handshake", json=paquete_http)
 
 shared_key = client_private_key.exchange(server_pub)
 
