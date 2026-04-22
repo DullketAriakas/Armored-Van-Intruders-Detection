@@ -36,10 +36,16 @@ signature = server_rsa_private_key.sign(
     hashes.SHA256()
 )
 
+
+
 #Estructura de la tabla
-sensores_esquema=[{'name': 'id', 'type': 'INTEGER', 'restrictions': 'PRIMARY KEY'},{'name': 'DATA', 'type': 'TEXT', 'restrictions': 'NOT NULL'},{'name': 'timestamp', 'type': 'TEXT', 'restrictions': 'NOT NULL'}]
+sensores_esquema=[{'name': 'id', 'type': 'INTEGER', 'restrictions': 'PRIMARY KEY'},
+				  {'name': 'data', 'type': 'TEXT', 'restrictions': 'NOT NULL'},
+				  {'name': 'timestamp', 'type': 'TEXT', 'restrictions': 'NOT NULL'},
+				  {'name': 'furgon_id', 'type': 'TEXT', 'restrictions': 'NOT NULL'}]
 
-
+tabla_datos=functions.DataBase("SystemDB","SensoresFurgon")
+tabla_datos.create_table(sensores_esquema)
 
 app = Flask(__name__)
 
@@ -54,11 +60,10 @@ def read_sensors():
 		print("---------------- He recibido --------------------")
 		print(str(content))
 		print("-------------------------------------------------")
-		# Recibir GPS conectandose a la ESP32 por BT
-		GPS={'ubicacion':content['ubicacion'],'mascota':content['mascota'],'latitud':content['latitude'],'longitud':content['longitude']}
 
-		actuacion,movimiento,time=functions.saveData(content['temperature'],content['pressure'],content['humidity'],content['clima'],GPS)
-		respuestaJson=functions.createJsonResponse(content['temperature'], content['pressure'], content['humidity'],content['clima'],GPS,movimiento,actuacion,time)
+
+		status=functions.saveData(content,tabla_datos)
+		respuestaJson=functions.createJsonResponse(status,content['timestamp'])
 
 		return respuestaJson, 200
 
@@ -93,11 +98,6 @@ def publicKey():
 		print("SERVER KEY:", SHARED_KEY_SERVER.hex())
 
 		return "ACK", 200
-
-
-
-tabla_datos=functions.DataBase("SystemDB","SensoresFurgon")
-tabla_datos.create_table(sensores_esquema)
 
 
 app.run(host="0.0.0.0", port="5001")

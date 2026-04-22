@@ -1,69 +1,44 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
-import time
+import functions
 
 """
 JSON EJEMPLO
-    {
-    "temperature": "",
-    "latitude": "",
-    "longitude": "",
-    "humidity": "",
-    "pressure": "",
-    "timestamp": ""
+doc_interno = {
+        "furgon_id": "VAN_01",
+        "temperature": temperature,
+        "pressure": pressure,
+        "latitude": latitude,
+        "longitude": longitude,
+        "estado_alarma": estado_alarma
     }
 """
 
 
 # Función que permite crear el Json de respuesta de las llamadas
 
-def createJsonResponse(temperatura, presion, humedad,clima,gps,movimiento,actuacion,timestamp):
+def createJsonResponse(status,timestamp):
     
 	respuestaJson={
-			"Temperatura":temperatura,
-			"Presion":presion,
-			"Humedad":humedad,
-			"Clima":clima,
-			"Ubicacion":gps['ubicacion'],
-			"Mascota":gps['mascota'],
-			"Latitud":gps['latitud'],
-			"Longitud":gps['longitud'],
-			"Movimiento":movimiento,
-			"Actuacion":actuacion,
-			"Timestamp":timestamp
+			"status": status,
+			"timestamp":timestamp
 
 		}
 	return respuestaJson
 
 # Funcion que permite tomar las decisiones dependiendo de los valores introducidos
-def generarAcciones(temperatura,humedad,presion,gps):
-  actuacion="A"
-  movimiento='N'
+def generarAcciones(jsonResponse):
+  status="OK"
 
-  if(gps['ubicacion']=='adentro'):
-    movimiento='I'
-    if(temperatura<10 or temperatura>30):
-      actuacion="C"
-    elif(humedad>80):
-      actuacion="C"
-    elif(presion<1000):
-      actuacion="C"
-  elif(gps['ubicacion']=='afuera'):
-    movimiento='D'
-
-  return actuacion,movimiento
+  return status
 
 # Función que ejecuta las acciones de la llamada POST
-def saveData(temperatura, presion, humedad,clima,gps):
-  
-
-  
-  timestamp = int(time.time() * 1000)
-
-  dt = datetime.fromtimestamp(timestamp / 1000, tz=ZoneInfo("Europe/Madrid"))
-
-  hora = dt.hour
-
-  actuacion,movimiento=generarAcciones(temperatura,humedad,presion,clima,gps)
-  return actuacion,movimiento,timestamp
+def saveData(jsonResponse, dataBase):
+  textoCifrado=""
+  insertRow={
+    "data": textoCifrado,
+    "timestamp": jsonResponse['timestamp'],
+    "furgon_id": jsonResponse['furgon_id']
+}
+  dataBase.insert(insertRow)
+  status=generarAcciones(jsonResponse)
+  return status
 	
