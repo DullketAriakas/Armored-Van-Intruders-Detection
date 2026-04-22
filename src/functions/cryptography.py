@@ -1,9 +1,9 @@
 from Crypto.Cipher import AES
 import base64
 import json
-from pathlib import Path
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+import os, subprocess
 
 def pad(data):
     padding_len = 16 - (len(data) % 16)
@@ -30,67 +30,57 @@ def descifrar_mensaje(base64_string,key):
         print(">>> Fallo de seguridad al descifrar:", e)
         return None
 
-# Función que permite crear el archivo de certificación
-def createKeys(rol, root):
-    
+
+def _load_public(path, peer_name):
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No se encontró la clave pública del {peer_name}. "
+            f"Asegúrate de que el {peer_name} haya arrancado."
+        )
+    with open(path, "rb") as f:
+        return serialization.load_pem_public_key(f.read())
+
+
+def createKeys(role,root):
+
     key_dir = root / "keys"
 
-    if rol == "server":
-
+    if role=='server':
         private_path = key_dir / "server_private.pem"
-        public_path = key_dir / "server_public.pem"
+        public_path  = key_dir / "server_public.pem"
 
-        # crear si no existe
-        if not private_path.exists() or not public_path.exists():
+    elif role=='client':
+        private_path = key_dir / "client_private.pem"
+        public_path  = key_dir / "client_public.pem"
 
-            private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=2048
-            )
-            public_key = private_key.public_key()
+    if not private_path.exists() or not public_path.exists():
+        own_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        own_public  = own_private.public_key()
 
-
-            with open(private_path, "wb") as f:
-                f.write(
-                    private_key.private_bytes(
-                        encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.PKCS8,
-                        encryption_algorithm=serialization.NoEncryption()
-                    )
-                )
-
-            with open(public_path, "wb") as f:
-                f.write(
-                    public_key.public_bytes(
-                        encoding=serialization.Encoding.PEM,
-                        format=serialization.PublicFormat.SubjectPublicKeyInfo
-                    )
-                )
-
-            return private_key, public_key
-
-        with open(private_path, "rb") as f:
-            private_key = serialization.load_pem_private_key(f.read(), password=None)
-
-        with open(public_path, "rb") as f:
-            public_key = serialization.load_pem_public_key(f.read())
-
-        return private_key, public_key
-
-
-    elif rol == "client":
-
-        public_path = key_dir / "server_public.pem"
-
-        if not public_path.exists():
-            raise FileNotFoundError(
-                "No se encontró la clave pública del servidor. "
-            )
-
-        with open(public_path, "rb") as f:
-            server_public_key = serialization.load_pem_public_key(f.read())
-
-        return None, server_public_key
-
+        with open(private_path, "wb") as f:
+            f.write(own_private.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+        with open(public_path, "wb") as f:
+            f.write(own_public.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ))
+        subprocess.run(["icacls", str(private_path), "/inheritance:r", "/grant:r", f"{os.getlogin()}:R"], check=True)
     else:
-        raise ValueError("rol debe ser 'server' o 'client'")
+        with open(private_path, "rb") as f:
+            own_private = serialization.load_pem_private_key(f.read(), password=None)
+        with open(public_path, "rb") as f:
+            own_public = serialization.load_pem_public_key(f.read())
+
+    if role=='server':
+
+        peer_public = _load_public(key_dir / "client_public.pem", "cliente")
+
+    elif role=='client':
+
+        peer_public = _load_public(key_dir / "server_public.pem", "servidor")
+    return own_private, own_public, peer_public
+
