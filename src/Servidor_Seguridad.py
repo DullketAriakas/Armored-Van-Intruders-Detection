@@ -2,7 +2,7 @@ import functions, json
 from pathlib import Path
 from flask import Flask, request
 import base64
-from cryptography.hazmat.primitives.asymmetric import dh, rsa, padding
+from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
@@ -11,11 +11,11 @@ SHARED_KEY_SERVER=None
 
 #Claves RSA del servidor (Firma)
 
-server_rsa_private_key,server_rsa_public_key=functions.createKeys("server",BASE_DIR)
+server_rsa_private_key,server_rsa_public_key,client_rsa_public_key=functions.createKeys('server',BASE_DIR)
 
 
 print("Claves RSA creadas")
-# Generación de parámetros Diffie - Hellman (Autenticación)
+# Generación de parámetros Diffie - Hellman (Intercambio Clave)
 
 parameters = dh.generate_parameters(generator=2, key_size=1024)
 
