@@ -15,27 +15,6 @@ server_rsa_private_key,server_rsa_public_key,client_rsa_public_key=functions.cre
 
 
 print("Claves RSA creadas")
-# Generación de parámetros Diffie - Hellman (Intercambio Clave)
-
-parameters = dh.generate_parameters(generator=2, key_size=1024)
-
-server_dh_private_key     = parameters.generate_private_key()
-server_dh_public_key      = server_dh_private_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
-
-
-print("Claves DH creadas")
-
-#Firmar la clave
-
-signature = server_rsa_private_key.sign(
-    server_dh_public_key,
-    padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-    ),
-    hashes.SHA256()
-)
-
 
 
 #Estructura de la tabla
@@ -67,24 +46,55 @@ def read_sensors():
 
 		return respuestaJson, 200
 
-@app.route('/handshake', methods = ['GET','POST'])
+@app.route('/handshake', methods = ['POST'])
 def publicKey():
 	global SHARED_KEY_SERVER
-	if request.method == 'GET':
-		payload = {
-			"type": "server_hello",
-			"dh_public": base64.b64encode(server_dh_public_key).decode(),
-			"signature": base64.b64encode(signature).decode(),
-			"p": parameters.parameter_numbers().p,
-			"g": parameters.parameter_numbers().g
-		}
-		return payload, 200
-	
 	if request.method == 'POST':
 		content = request.get_json()
-		client_pub = serialization.load_der_public_key(
-			base64.b64decode(content["client_dh"])
+		client_dh = base64.b64decode(content["dh_public"])
+		signature_client = base64.b64decode(content["signature"])
+
+		try:
+			client_rsa_public_key.verify(
+				signature_client,
+				client_dh,
+				padding.PSS(
+					mgf=padding.MGF1(hashes.SHA256()),
+					salt_length=padding.PSS.MAX_LENGTH
+				),
+				hashes.SHA256()
+			)
+			print("Verificación del cliente exitosa")
+		except Exception as e:
+			print("No se ha podido verificar la identidad del cliente: ", e)
+			return "No se reconoce el cliente", 500
+
+		# Cargar parámetros DH
+		p = content["p"]
+		g = content["g"]
+
+		params = dh.DHParameterNumbers(p, g).parameters()
+
+		client_pub = serialization.load_der_public_key(client_dh)
+
+		# Generar claves DH del server
+		server_dh_private_key = params.generate_private_key()
+		server_dh_public_key = server_dh_private_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+
+		signature_server = server_rsa_private_key.sign(
+			server_dh_public_key,
+			padding.PSS(
+				mgf=padding.MGF1(hashes.SHA256()),
+				salt_length=padding.PSS.MAX_LENGTH
+			),
+			hashes.SHA256()
 		)
+
+		# Enviar clave del cliente
+		payload= {
+			"server_dh": base64.b64encode(server_dh_public_key).decode(),
+			"signature": base64.b64encode(signature_server).decode()
+		}
 
 		shared_key = server_dh_private_key.exchange(client_pub)
 
@@ -97,7 +107,7 @@ def publicKey():
 
 		print("SERVER KEY:", SHARED_KEY_SERVER.hex())
 
-		return "ACK", 200
+		return payload, 200
 
 
 app.run(host="0.0.0.0", port="5001")

@@ -16,11 +16,39 @@ BASE_DIR = Path(__file__).resolve().parent
 # Clave RSA pública del servidor (Firma)
 client_rsa_private_key,client_rsa_public_key,server_rsa_public_key=functions.createKeys('client',BASE_DIR)
 
+# Generación de parámetros Diffie - Hellman (Intercambio Clave)
+
+parameters = dh.generate_parameters(generator=2, key_size=1024)
+
+client_dh_private_key     = parameters.generate_private_key()
+client_dh_public_key      = client_dh_private_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+
+
+print("Claves DH creadas")
+
+
 # Handshake
-response_handshake = requests.get(URL_BASE_SERVIDOR+"/handshake")
+signature = client_rsa_private_key.sign(
+    client_dh_public_key,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
+
+payload = {
+			"dh_public": base64.b64encode(client_dh_public_key).decode(),
+			"signature": base64.b64encode(signature).decode(),
+			"p": parameters.parameter_numbers().p,
+			"g": parameters.parameter_numbers().g
+		}
+response_handshake = requests.post(URL_BASE_SERVIDOR+"/handshake", json=payload)
+
+
 response_json=response_handshake.json()
 print(response_json)
-server_dh = base64.b64decode(response_json["dh_public"])
+server_dh = base64.b64decode(response_json["server_dh"])
 signature = base64.b64decode(response_json["signature"])
 
 try:
@@ -38,34 +66,7 @@ except Exception as e:
     print("No se ha podido verificar la identidad del servidor: ", e)
     sys.exit()
 
-# Cargar parámetros DH
-p = response_json["p"]
-g = response_json["g"]
-
-params = dh.DHParameterNumbers(p, g).parameters()
-
 server_pub = serialization.load_der_public_key(server_dh)
-
-# Generar claves DH del cliente
-client_dh_private_key = params.generate_private_key()
-client_dh_public_key = client_dh_private_key.public_key().public_bytes(serialization.Encoding.DER,serialization.PublicFormat.SubjectPublicKeyInfo)
-
-signature = client_rsa_private_key.sign(
-    client_dh_public_key,
-    padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-    ),
-    hashes.SHA256()
-)
-
-# Enviar clave del cliente
-paquete_http= {
-    "client_dh": client_dh_public_key,
-    "signature":signature
-}
-
-ack=requests.post(URL_BASE_SERVIDOR+"/handshake", json=paquete_http)
 
 shared_key = client_dh_private_key.exchange(server_pub)
 
