@@ -1,8 +1,4 @@
-import time, sys
-import json
-import requests
-import functions
-import base64
+import time, sys, json, requests, functions, base64
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.hazmat.primitives import serialization, hashes
@@ -17,18 +13,33 @@ BASE_DIR = Path(__file__).resolve().parent
 client_rsa_private_key,client_rsa_public_key=functions.createKeys_savePublic('client',BASE_DIR)
 server_rsa_public_key=functions.loadPublic('client',BASE_DIR)
 
+print("------ Claves RSA creadas --------- ")
+public_key_bytes_server = server_rsa_public_key.public_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+)
+public_key_bytes_client = client_rsa_public_key.public_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+)
+print("Clave RSA pública del cliente: " + public_key_bytes_client.hex())
+print("Clave RSA pública del servidor: " + public_key_bytes_server.hex())
+
 # Generación de parámetros Diffie - Hellman (Intercambio Clave)
 
-parameters = dh.generate_parameters(generator=2, key_size=1024)
+parameters = dh.generate_parameters(generator=2, key_size=2048)
 
 client_dh_private_key     = parameters.generate_private_key()
 client_dh_public_key      = client_dh_private_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
 
 
-print("Claves DH creadas")
+print("------ Claves DH creadas --------- ")
 
+print("Clave DH publica: "+ client_dh_public_key.hex())
 
-# Handshake
+print("------ Iniciando Handshake --------- ")
+
+# Handshake Firma de clave y envío al servidor
 signature = client_rsa_private_key.sign(
     client_dh_public_key,
     padding.PSS(
@@ -44,13 +55,21 @@ payload = {
 			"p": parameters.parameter_numbers().p,
 			"g": parameters.parameter_numbers().g
 		}
+print("Payload enviado al servidor: ")
+print(json.dumps(payload, indent=2))
 response_handshake = requests.post(URL_BASE_SERVIDOR+"/handshake", json=payload)
 
 
 response_json=response_handshake.json()
-print(response_json)
+
+print("------ Json recibido del servidor --------- ")
+
+print(json.dumps(response_json, indent=2))
+
 server_dh = base64.b64decode(response_json["server_dh"])
 signature = base64.b64decode(response_json["signature"])
+
+# Verificar firma del servidor (Autenticación)
 
 try:
     server_rsa_public_key.verify(
@@ -62,11 +81,12 @@ try:
         ),
         hashes.SHA256()
     )
-    print("Verificación del servidor exitosa")
+    print("Verificación del servidor mediante firma exitosa")
 except Exception as e:
     print("No se ha podido verificar la identidad del servidor: ", e)
     sys.exit()
 
+# Establecer la clave compartida en base a la DH compartida por el servidor
 server_pub = serialization.load_der_public_key(server_dh)
 
 shared_key = client_dh_private_key.exchange(server_pub)
@@ -78,7 +98,8 @@ SHARED_KEY_CLIENT = HKDF(
     info=b"handshake"
 ).derive(shared_key)
 
-print("CLIENT KEY:", SHARED_KEY_CLIENT.hex())
+print("------ Finalizando Handshake --------- ")
+print("CLIENT SHARED KEY:", SHARED_KEY_CLIENT.hex())
 
 # 3. Inicio simulación
 print("------ Iniciando simulador de furgón blindado... --------- ")
