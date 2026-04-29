@@ -1,4 +1,4 @@
-import functions, json
+import functions
 from pathlib import Path
 from flask import Flask, request
 import base64
@@ -11,7 +11,7 @@ SHARED_KEY_SERVER=None
 
 #Claves RSA del servidor (Firma)
 
-server_rsa_private_key,server_rsa_public_key,client_rsa_public_key=functions.createKeys('server',BASE_DIR)
+server_rsa_private_key,server_rsa_public_key=functions.createKeys_savePublic('server',BASE_DIR)
 
 
 print("Claves RSA creadas")
@@ -50,6 +50,7 @@ def read_sensors():
 def publicKey():
 	global SHARED_KEY_SERVER
 	if request.method == 'POST':
+		client_rsa_public_key=functions.loadPublic('server',BASE_DIR)
 		content = request.get_json()
 		client_dh = base64.b64decode(content["dh_public"])
 		signature_client = base64.b64decode(content["signature"])

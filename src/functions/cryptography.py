@@ -31,56 +31,36 @@ def descifrar_mensaje(base64_string,key):
         return None
 
 
-def _load_public(path, peer_name):
-    if not path.exists():
-        raise FileNotFoundError(
-            f"No se encontró la clave pública del {peer_name}. "
-            f"Asegúrate de que el {peer_name} haya arrancado."
-        )
-    with open(path, "rb") as f:
-        return serialization.load_pem_public_key(f.read())
-
-
-def createKeys(role,root):
+def loadPublic(role,root):
 
     key_dir = root / "keys"
-
     if role=='server':
-        private_path = key_dir / "server_private.pem"
+        with open(key_dir / "client_public.pem", "rb") as f:
+            return serialization.load_pem_public_key(f.read())
+
+    elif role=='client':
+        with open(key_dir / "server_public.pem", "rb") as f:
+            return serialization.load_pem_public_key(f.read())
+    
+
+
+def createKeys_savePublic(role, root):
+
+    key_dir = root / "keys"
+    if role=='server':
         public_path  = key_dir / "server_public.pem"
 
     elif role=='client':
-        private_path = key_dir / "client_private.pem"
         public_path  = key_dir / "client_public.pem"
 
-    if not private_path.exists() or not public_path.exists():
-        own_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        own_public  = own_private.public_key()
+    own_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    own_public  = own_private.public_key()
 
-        with open(private_path, "wb") as f:
-            f.write(own_private.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
-        with open(public_path, "wb") as f:
-            f.write(own_public.public_bytes(
+    with open(public_path, "wb") as f:
+        f.write(own_public.public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             ))
-        subprocess.run(["icacls", str(private_path), "/inheritance:r", "/grant:r", f"{os.getlogin()}:R"], check=True)
-    else:
-        with open(private_path, "rb") as f:
-            own_private = serialization.load_pem_private_key(f.read(), password=None)
-        with open(public_path, "rb") as f:
-            own_public = serialization.load_pem_public_key(f.read())
-
-    if role=='server':
-
-        peer_public = _load_public(key_dir / "client_public.pem", "cliente")
-
-    elif role=='client':
-
-        peer_public = _load_public(key_dir / "server_public.pem", "servidor")
-    return own_private, own_public, peer_public
+    
+    return own_private, own_public
 
