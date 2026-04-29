@@ -14,7 +14,8 @@ URL_BASE_SERVIDOR= "http://127.0.0.1:5001"
 BASE_DIR = Path(__file__).resolve().parent
 
 # Clave RSA pública del servidor (Firma)
-client_rsa_private_key,client_rsa_public_key,server_rsa_public_key=functions.createKeys('client',BASE_DIR)
+client_rsa_private_key,client_rsa_public_key=functions.createKeys_savePublic('client',BASE_DIR)
+server_rsa_public_key=functions.loadPublic('client',BASE_DIR)
 
 # Generación de parámetros Diffie - Hellman (Intercambio Clave)
 
