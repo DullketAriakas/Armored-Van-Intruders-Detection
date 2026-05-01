@@ -73,14 +73,14 @@ def read_sensors():
 			return {"orden_cifrada": orden_cifrada}, 200
 			
 		else:
-			print("!!! Intento de hackeo o error al descifrar !!!")
+			print(" ------ Intento de hackeo o error al descifrar ------ ")
 			return {"error": "No se pudo descifrar"}, 400
 
 @app.route('/handshake', methods = ['POST'])
 def publicKey():
 	global SHARED_KEY_SERVER
 	if request.method == 'POST':
-		print("------ Iniciando Handshake Solicitado --------- ")
+		print(" ------ Iniciando Handshake Solicitado --------- ")
 
 		# Obtención de pública del cliente estableciendo el rol
 		client_rsa_public_key=functions.loadPublic('server',BASE_DIR)
