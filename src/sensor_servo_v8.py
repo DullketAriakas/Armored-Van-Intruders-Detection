@@ -4,6 +4,14 @@ from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+'''
+En este archivo se implementa el cliente que simula el furgón blindado, 
+que se encargará de generar los datos de los sensores, cifrarlos y enviarlos 
+al servidor. También gestiona el proceso de handshake para establecer una 
+clave compartida con el servidor, y genera un par de claves RSA para firmar 
+su clave DH y autenticar su identidad ante el servidor.
+'''
+
 # 1. Configuracion servidor
 URL_SERVIDOR = "http://127.0.0.1:5001/sensor_values"
 URL_BASE_SERVIDOR= "http://127.0.0.1:5001"
@@ -105,15 +113,15 @@ print("CLIENT SHARED KEY:", SHARED_KEY_CLIENT.hex())
 print("------ Iniciando simulador de furgón blindado... --------- ")
 
 try:
-    
-    with open('src/timeline_datos.json', 'r', encoding='utf-8') as f:    
+    ruta_json = BASE_DIR / 'timeline_datos.json'
+    with open(ruta_json, 'r', encoding='utf-8') as f:    
         datos_timeline = json.load(f)
     print(f"Se han cargado {len(datos_timeline)} eventos del archivo JSON")
 except Exception as e:
     print("Error al leer el archivo JSON:", e)
     datos_timeline = []
 
-# 4. Bucle principal integrando los datos
+# Bucle principal integrando los datos
 for evento in datos_timeline:
     timestamp = evento.get("timestamp", "")
     fase = evento.get("fase", "")
@@ -132,6 +140,7 @@ for evento in datos_timeline:
 
     # Preparar el JSON interno
     doc_interno = {
+        "timestamp": timestamp,
         "furgon_id": "VAN_01",
         "temperature": temperature,
         "pressure": pressure,
@@ -141,7 +150,28 @@ for evento in datos_timeline:
     }
     
     # Cifrar el paquete
-    payload_cifrado = functions.cifrar_mensaje(doc_interno,SHARED_KEY_CLIENT)
+    # Comparativa de rendimiento (bloque vs flujo) para cifrar el mismo JSON con AES y ChaCha20, usando la misma clave compartida
+    
+    # Medimos cuánto tarda AES (cifrado de bloque)
+    inicio_aes = time.perf_counter()
+    payload_aes = functions.cifrar_mensaje(doc_interno, SHARED_KEY_CLIENT)
+    fin_aes = time.perf_counter()
+    
+    # Medimos cuánto tarda ChaCha20 (cifrado de flujo)
+    inicio_chacha = time.perf_counter()
+    payload_chacha = functions.cifrar_mensaje_chacha20(doc_interno, SHARED_KEY_CLIENT)
+    fin_chacha = time.perf_counter()
+    
+    # Calculamos los tiempos en milisegundos
+    tiempo_aes = (fin_aes - inicio_aes) * 1000
+    tiempo_chacha = (fin_chacha - inicio_chacha) * 1000
+    
+    print("\n--- COMPARATIVA DE ALGORITMOS ---")
+    print(f"Tiempo AES (Bloque):    {tiempo_aes:.4f} ms")
+    print(f"Tiempo ChaCha20 (Flujo): {tiempo_chacha:.4f} ms")
+    
+    # Enviamos el de AES al servidor (se podría cambiar a ChaCha20 para probar el otro algoritmo)
+    payload_cifrado = payload_aes 
     paquete_http = {"datos_seguros": payload_cifrado}
     
     print(f"Enviando JSON cifrado: {payload_cifrado[:40]}...")

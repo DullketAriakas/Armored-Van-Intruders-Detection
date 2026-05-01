@@ -1,4 +1,5 @@
 
+import json
 
 """
 JSON EJEMPLO
@@ -13,7 +14,7 @@ doc_interno = {
 """
 
 
-# Función que permite crear el Json de respuesta de las llamadas
+# Función que permite crear el JSON de respuesta de las llamadas
 
 def createJsonResponse(status,timestamp):
     
@@ -32,13 +33,15 @@ def generarAcciones(jsonResponse):
 
 # Función que ejecuta las acciones de la llamada POST
 def saveData(jsonResponse, dataBase):
-  textoCifrado=""
+  # Convertimos el diccionario a un texto entendible para guardarlo
+  textoDescifrado = json.dumps(jsonResponse) 
+  
   insertRow={
-    "data": textoCifrado,
+    "data": textoDescifrado, # guardamos el dato real, aunque se podría guardar el JSON cifrado si se quisiera, dependiendo de las necesidades de seguridad y rendimiento
     "timestamp": jsonResponse['timestamp'],
     "furgon_id": jsonResponse['furgon_id']
-}
+  }
+  
   dataBase.insert(insertRow)
   status=generarAcciones(jsonResponse)
   return status
-	

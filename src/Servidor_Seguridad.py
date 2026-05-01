@@ -5,6 +5,14 @@ from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+'''
+En este archivo se implementa el servidor de seguridad, que se encargará de 
+recibir los datos de los sensores, almacenarlos en la base de datos y gestionar 
+el proceso de handshake para establecer una clave compartida con el cliente. 
+También genera un par de claves RSA para firmar su clave DH y autenticar su 
+identidad ante el cliente.
+'''
+
 BASE_DIR = Path(__file__).resolve().parent
 SHARED_KEY_SERVER=None
 
@@ -36,17 +44,37 @@ def index():
 
 @app.route('/sensor_values', methods = [ 'POST'])
 def read_sensors():
+	#Usamos clave compartida generada en el handshake
+	global SHARED_KEY_SERVER 
+	
 	if request.method == 'POST':
 		content = request.get_json()
-		print("---------------- He recibido --------------------")
-		print(str(content))
-		print("-------------------------------------------------")
-
-
-		status=functions.saveData(content,tabla_datos)
-		respuestaJson=functions.createJsonResponse(status,content['timestamp'])
-
-		return respuestaJson, 200
+		print("\n---------------- NUEVO PAQUETE RECIBIDO ----------------")
+		payload_cifrado = content.get("datos_seguros", "")
+		
+		# Desciframos con la clave compartida
+		datos_descifrados = functions.descifrar_mensaje(payload_cifrado, SHARED_KEY_SERVER)
+		
+		if datos_descifrados:
+			print("------ Datos descifrados correctamente --------- ")
+			print(json.dumps(datos_descifrados, indent=2))
+			
+			# Guardamos en base de datos
+			status = functions.saveData(datos_descifrados, tabla_datos)
+			
+			# Preparamos orden de respuesta del furgón que dependerá del estado de la alarma recibido
+			# Si hay alarma, le decimos que C (Cerrar). Si todo ok, A (Abrir)
+			estado_alarma = datos_descifrados.get("estado_alarma", 0)
+			orden = {"Actuacion": "C" if estado_alarma > 0 else "A"}
+			
+			# Ciframos respuesta con la clave compartida para que el cliente pueda descifrarla y actuar en consecuencia
+			orden_cifrada = functions.cifrar_mensaje(orden, SHARED_KEY_SERVER)
+			
+			return {"orden_cifrada": orden_cifrada}, 200
+			
+		else:
+			print("!!! Intento de hackeo o error al descifrar !!!")
+			return {"error": "No se pudo descifrar"}, 400
 
 @app.route('/handshake', methods = ['POST'])
 def publicKey():

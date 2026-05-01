@@ -13,7 +13,7 @@ class DataBase:
         """
         self.db= db_name
         self.table = table
-        self.connection = sqlite3.connect(db_name + '.db')
+        self.connection = sqlite3.connect(db_name + '.db', check_same_thread=False)
         self.connection.row_factory = sqlite3.Row
         self.columns=None # Se guardan al crear la tabla
     
@@ -32,8 +32,8 @@ class DataBase:
         self.columns = []
         for row in rows:
             col_info = {
-                'nombre': row[1],  # column name
-                'tipo': row[2],    # data type
+                'name': row[1],  # column name
+                'type': row[2],    # data type
             }
             
             # Agregar restricciones si existen
