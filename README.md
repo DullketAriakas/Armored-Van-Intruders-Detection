@@ -44,10 +44,10 @@ Esquema de seguridad de extremo a extremo:
 ## Instrucciones de Ejecución
 
 ### 1. Requisitos previos
-Es necesario tener instalado Python 3.x y las siguientes librerías de terceros. Puedes instalarlas ejecutando:
+Es necesario tener instalado Python 3.x y las siguientes librerías de terceros. Puedes instalarlas ejecutando el siguiente codigo una vez descargado el proyecto:
 
 ```bash
-pip install flask requests cryptography pycryptodome
+pip install .
 ```
 
 ### 2. Despliegue del Entorno
