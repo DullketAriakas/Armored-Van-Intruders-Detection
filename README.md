@@ -48,6 +48,7 @@ Es necesario tener instalado Python 3.x y las siguientes librerías de terceros.
 
 ```bash
 pip install flask requests cryptography pycryptodome
+```
 
 ### 2. Despliegue del Entorno
 Todos los archivos deben estar en la misma carpeta. El sistema generará automáticamente los pares de claves RSA (`.pem`) la primera vez que se ejecute si estas no se encuentran presentes en el directorio.
