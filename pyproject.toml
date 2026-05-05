@@ -10,5 +10,6 @@ dependencies = [
     "requests",
     "cryptography",
     "flask",
+    "pycryptodome"
 ]
  
